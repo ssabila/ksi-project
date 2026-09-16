@@ -1,0 +1,12 @@
+backend/venv/
+backend/.env
+backend/instance/
+backend/*.db
+backend/keys/*.pem
+backend/certs/*.pem
+backend/storage/*.enc
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+__pycache__/
+*.pyc
