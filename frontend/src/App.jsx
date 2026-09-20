@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://localhost:5000/api";
+const API_URL = import.meta.env.VITE_API_URL || "/api";
 const scoreFields = [["uts", "UTS"], ["uas", "UAS"], ["tugas", "Tugas"], ["praktikum", "Praktikum"]];
 const emptyScores = { mahasiswa_id: "", uts: "", uas: "", tugas: "", praktikum: "" };
 
@@ -88,7 +88,31 @@ function Files({ user, token, setMessage }) {
   const canUpload = user.role === "mahasiswa";
   const load = () => apiRequest("/files", {}, token).then(setFiles).catch((error) => setMessage(error.message));
   useEffect(() => { load(); }, []);
-  const download = async (file) => { try { const response = await fetch(`${API_URL}${file.download_url}`, { headers: { Authorization: `Bearer ${token}` } }); if (!response.ok) throw new Error("Download ditolak"); const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = file.original_name; anchor.click(); URL.revokeObjectURL(url); } catch (error) { setMessage(error.message); } };
+  const download = async (file) => {
+    try {
+      const downloadPath = file.download_url.replace(/^\/api/, "");
+      const response = await fetch(`${API_URL}${downloadPath}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) {
+        let message = "Download ditolak";
+        try { message = (await response.json()).error || message; } catch { /* Response is a file or empty. */ }
+        throw new Error(message);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = file.original_name;
+      anchor.style.display = "none";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) {
+      setMessage(error.message === "Failed to fetch"
+        ? "Download gagal terhubung ke backend. Buka https://localhost:5000/api/health dan izinkan sertifikat lokal, lalu coba lagi."
+        : error.message);
+    }
+  };
   const upload = async (event) => { event.preventDefault(); if (!selected) return; const body = new FormData(); body.append("mahasiswa_id", user.id); body.append("file", selected); try { await apiRequest("/files", { method: "POST", body }, token); setSelected(null); event.target.reset(); setMessage("Dokumen berhasil dienkripsi dan disimpan."); load(); } catch (error) { setMessage(error.message); } };
   return <div className="file-layout">{canUpload ? <form className="panel upload-panel" onSubmit={upload}><p className="section-kicker">Upload mahasiswa</p><h2>Amankan dokumen</h2><p>Upload dokumen milikmu. Isi file dienkripsi AES-GCM dan kunci AES dibungkus RSA.</p><label className="file-drop"><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt" onChange={(event) => setSelected(event.target.files[0])} /><strong>{selected ? selected.name : "Pilih file untuk diunggah"}</strong><small>Maksimal 10 MB · PDF, DOCX, JPG, PNG, TXT</small></label><button className="primary-button" disabled={!selected}>Upload terenkripsi <span>↗</span></button></form> : <section className="panel permission-panel"><p className="section-kicker">Mode monitoring</p><h2>Dokumen mahasiswa</h2><p>Role <strong>{user.role}</strong> dapat melihat dan mengunduh dokumen untuk verifikasi. Upload dilakukan oleh mahasiswa pemilik dokumen.</p><div className="permission-note"><span>✓</span><span>File tersimpan sebagai ciphertext<br /><small>Download akan didekripsi hanya setelah akses diizinkan.</small></span></div></section>}<section className="panel"><div className="panel-heading"><div><p className="section-kicker">RSA key envelope</p><h2>Dokumen tersimpan</h2></div><span className="record-count">{files.length} file</span></div>{files.length ? <div className="file-list">{files.map((file) => <div className="file-item" key={file.id}><span className="file-icon">⌁</span><span><strong>{file.original_name}</strong><small>Mahasiswa #{file.mahasiswa_id} · {new Date(file.created_at).toLocaleDateString("id-ID")}</small></span><button title="Download dan dekripsi" onClick={() => download(file)}>↓</button></div>)}</div> : <div className="empty-state"><span>∅</span><p>Belum ada dokumen.</p></div>}</section></div>;
 }
