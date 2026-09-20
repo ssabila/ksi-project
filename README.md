@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-Buka `http://localhost:5173`. Frontend membaca API dari `https://localhost:5000/api` saat TLS lokal aktif; ubah `VITE_API_URL` jika backend dijalankan tanpa TLS, pada host, atau port lain.
+Buka `http://localhost:5173`. Saat development, frontend memakai proxy `/api` sehingga browser tidak perlu mempercayai sertifikat self-signed backend secara langsung. Ubah `VITE_API_URL` jika frontend perlu mengakses API pada host atau port lain.
 
 Jika TLS lokal aktif, frontend menggunakan `https://localhost:5000/api`. Buka `https://localhost:5000/api/health` sekali di browser dan pilih **Advanced** lalu **Proceed to localhost** agar sertifikat self-signed dipercaya browser. Setelah mengubah file environment frontend, restart `npm run dev`.
 
