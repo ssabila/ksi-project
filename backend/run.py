@@ -3,11 +3,14 @@ import os
 
 app = create_app()
 
-
 if __name__ == "__main__":
     cert_file = os.getenv("SSL_CERT_FILE")
     key_file = os.getenv("SSL_KEY_FILE")
-    ssl_context = (cert_file, key_file) if cert_file and key_file else None
-    # Debugger Werkzeug memungkinkan eksekusi kode jika terekspos: default MATI.
-    debug = os.getenv("FLASK_DEBUG", "0") == "1"
-    app.run(debug=debug, port=int(os.getenv("PORT", "5000")), ssl_context=ssl_context)
+    # Ubah bagian di bawah ini
+    ssl_context = (cert_file, key_file) if cert_file and key_file else 'adhoc'
+    app.run(
+    debug=True,
+    host="0.0.0.0",
+    port=int(os.getenv("PORT", "5000")),
+    ssl_context=ssl_context,
+    )   

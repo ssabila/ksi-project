@@ -5,11 +5,19 @@ from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 BASE_DIR = Path(__file__).resolve().parents[2]
+PASSPHRASE_PLACEHOLDER = "ganti_dengan"
 
 
 def _path(env_name, default):
     value = Path(os.getenv(env_name, default))
     return value if value.is_absolute() else BASE_DIR / value
+
+
+def _key_passphrase():
+    value = os.getenv("RSA_KEY_PASSPHRASE", "").strip()
+    if not value or value.startswith(PASSPHRASE_PLACEHOLDER):
+        raise RuntimeError("RSA_KEY_PASSPHRASE wajib diisi dengan passphrase yang kuat")
+    return value.encode()
 
 
 def ensure_rsa_keys():
@@ -22,7 +30,7 @@ def ensure_rsa_keys():
             private_key.private_bytes(
                 serialization.Encoding.PEM,
                 serialization.PrivateFormat.PKCS8,
-                serialization.NoEncryption(),
+                serialization.BestAvailableEncryption(_key_passphrase()),
             )
         )
         public_path.write_bytes(
@@ -41,7 +49,10 @@ def load_public_key():
 
 def load_private_key():
     private_path, _ = ensure_rsa_keys()
-    return serialization.load_pem_private_key(private_path.read_bytes(), password=None)
+    return serialization.load_pem_private_key(
+        private_path.read_bytes(),
+        password=_key_passphrase(),
+    )
 
 
 def rsa_oaep_encrypt(data):
