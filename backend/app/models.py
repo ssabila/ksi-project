@@ -14,7 +14,6 @@ class Nilai(db.Model):
     praktikum_enc = db.Column(db.LargeBinary, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
-
 class User(db.Model):
     __tablename__ = "users"
 
